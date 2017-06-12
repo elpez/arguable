@@ -11,6 +11,19 @@ class ParserTests(unittest.TestCase):
         args = parser.parse_args(['--verbose'])
         self.assertEqual(args.verbose, True)
 
+
+    def test_repeatable(self):
+        parser = arguable.make_parser('-vv')
+        args = parser.parse_args([])
+        self.assertEqual(args.v, 0)
+
+        args = parser.parse_args(['-v'])
+        self.assertEqual(args.v, 1)
+
+        args = parser.parse_args(['-vvvvv'])
+        self.assertEqual(args.v, 5)
+
+
     def test_full(self):
         parser = arguable.make_parser('-v infile outfile?')
         args = parser.parse_args(['test.xml'])

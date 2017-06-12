@@ -11,6 +11,7 @@ def make_parser(pattern):
        should be a string of whitespace-separated tokens, where each token is one of:
 
          - one or more flags, e.g. "-vfq". Each flag is added as a separate, optional argument.
+         - a repeatable flag, e.g. "-vv".
          - a long option, e.g. "--verbose".
          - a required positional argument, e.g. "infile"
          - an optional positional argument, e.g. "outfile?"
@@ -20,8 +21,11 @@ def make_parser(pattern):
         if token.startswith('--'):
             parser.add_argument(token, action='store_true')
         elif token.startswith('-'):
-            for flag in token[1:]:
-                parser.add_argument('-' + flag, action='store_true')
+            if len(token) > 2 and len(set(token[1:])) == 1:
+                parser.add_argument('-' + token[1], action='count', default=0)
+            else:
+                for flag in token[1:]:
+                    parser.add_argument('-' + flag, action='store_true')
         elif token.endswith('?'):
             parser.add_argument(token[:-1], nargs='?')
         else:
