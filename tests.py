@@ -6,7 +6,12 @@ import arguable
 
 
 class ParserTests(unittest.TestCase):
-    def test_parse_args(self):
+    def test_long_option(self):
+        parser = arguable.make_parser('--verbose')
+        args = parser.parse_args(['--verbose'])
+        self.assertEqual(args.verbose, True)
+
+    def test_full(self):
         parser = arguable.make_parser('-v infile outfile?')
         args = parser.parse_args(['test.xml'])
         self.assertEqual(args.v, False)

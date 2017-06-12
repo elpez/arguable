@@ -17,11 +17,11 @@ def make_parser(pattern):
     """
     parser = argparse.ArgumentParser()
     for token in pattern.split():
-        if token.startswith('-'):
+        if token.startswith('--'):
+            parser.add_argument(token, action='store_true')
+        elif token.startswith('-'):
             for flag in token[1:]:
                 parser.add_argument('-' + flag, action='store_true')
-        elif token.startswith('--'):
-            parser.add_argument(token, action='store_true')
         elif token.endswith('?'):
             parser.add_argument(token[:-1], nargs='?')
         else:
