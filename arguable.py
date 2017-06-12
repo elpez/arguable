@@ -45,9 +45,15 @@ def make_parser(pattern):
                     else:
                         parser.add_argument('-' + flag, action='store_true')
                         i += 1
+        # foo...? gather all remaining positional arguments, but doesn't complain if none are left
+        elif token.endswith('...?'):
+            parser.add_argument(token[:-4], nargs='*')
         # foo? is an optional positional argument
         elif token.endswith('?'):
             parser.add_argument(token[:-1], nargs='?')
+        # foo... gathers all remaining positional arguments, requiring at least one
+        elif token.endswith('...'):
+            parser.add_argument(token[:-3], nargs='+')
         # anything else is interpreted as a required positional argument
         else:
             parser.add_argument(token)

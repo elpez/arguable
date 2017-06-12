@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 
 import unittest
+import contextlib
+import io
+import sys
 
 import arguable
 
@@ -44,6 +47,29 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(args.v, 5)
 
 
+    def test_gathering(self):
+        parser = arguable.make_parser('-v x y...')
+        args = parser.parse_args(['foo', 'bar', 'baz', '-v'])
+        self.assertEqual(args.x, 'foo')
+        self.assertEqual(args.y, ['bar', 'baz'])
+        self.assertEqual(args.v, True)
+        with suppress_stderr():
+            with self.assertRaises(SystemExit):
+                # y requires at least one argument
+                parser.parse_args(['1'])
+
+        parser = arguable.make_parser('-v x y...?')
+        args = parser.parse_args(['foo', 'bar', 'baz', '-v'])
+        self.assertEqual(args.x, 'foo')
+        self.assertEqual(args.y, ['bar', 'baz'])
+        self.assertEqual(args.v, True)
+        # not supplying any arguments for y is just fine
+        args = parser.parse_args(['foo', '-v'])
+        self.assertEqual(args.x, 'foo')
+        self.assertEqual(args.y, [])
+        self.assertEqual(args.v, True)
+
+
     def test_full(self):
         parser = arguable.make_parser('-v infile outfile?')
         args = parser.parse_args(['test.xml'])
@@ -60,6 +86,15 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(args.v, True)
         self.assertEqual(args.infile, 'test.xml')
         self.assertEqual(args.outfile, 'out.html')
+
+
+@contextlib.contextmanager
+def suppress_stderr():
+    old_stderr = sys.stderr
+    sys.stderr = io.StringIO()
+    yield
+    sys.stderr = old_stderr
+
 
 if __name__ == '__main__':
     unittest.main()
