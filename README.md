@@ -1,11 +1,11 @@
-# Blargparse
+# Arguable
 
 A command line argument parsing library for Python that isn't completely insane.
 
 ## Usage
 
 ```python
->>> parser = blargparse.Parser(description='Process some files')
+>>> parser = arguable.Parser(description='Process some files')
 >>> parser.add_arg('infile')
 >>> parser.add_optional_arg('outfile', default='out.xml')
 >>> parser.add_flag('-v', repeat=True, dest='verbosity')
