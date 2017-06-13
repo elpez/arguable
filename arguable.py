@@ -4,7 +4,6 @@ import argparse
 
 def parse_args(pattern, args=None):
     """Shortcut for calling parse_args on the object returned by make_parser."""
-    args = args if args is not None else sys.argv
     return make_parser(pattern).parse_args(args)
 
 
