@@ -31,8 +31,14 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(args.o, False)
 
         with self.assertRaises(SyntaxError):
-            # forget the ending ']'
+            # forgot the ending ']'
             arguable.make_parser('-fov[verbose')
+
+        # with repeated options
+        args = arguable.parse_args('-fvv[verbose]o', ['-vvvv', '-f'])
+        self.assertEqual(args.verbose, 4)
+        self.assertEqual(args.f, True)
+        self.assertEqual(args.o, False)
 
 
     def test_repeatable(self):
@@ -71,19 +77,19 @@ class ParserTests(unittest.TestCase):
 
 
     def test_full(self):
-        parser = arguable.make_parser('-v infile outfile?')
+        parser = arguable.make_parser('-vv[verbosity] infile outfile?')
         args = parser.parse_args(['test.xml'])
-        self.assertEqual(args.v, False)
+        self.assertEqual(args.verbosity, 0)
         self.assertEqual(args.infile, 'test.xml')
         self.assertEqual(args.outfile, None)
 
         args = parser.parse_args(['test.xml', '-v'])
-        self.assertEqual(args.v, True)
+        self.assertEqual(args.verbosity, 1)
         self.assertEqual(args.infile, 'test.xml')
         self.assertEqual(args.outfile, None)
 
-        args = parser.parse_args(['-v', 'test.xml', 'out.html'])
-        self.assertEqual(args.v, True)
+        args = parser.parse_args(['-vv', 'test.xml', 'out.html'])
+        self.assertEqual(args.verbosity, 2)
         self.assertEqual(args.infile, 'test.xml')
         self.assertEqual(args.outfile, 'out.html')
 
