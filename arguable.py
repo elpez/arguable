@@ -1,10 +1,27 @@
 import sys
 import argparse
+import contextlib
+import io
 
 
-def parse_args(pattern, args=None):
+class ArgumentParser(argparse.ArgumentParser):
+    def parse_args(self, args=None, exit_on_error=None, **kwargs):
+        # set a reasonable default for exit_on_error if not provided
+        if exit_on_error is None:
+            exit_on_error = bool(args is None)
+        if exit_on_error:
+            return super().parse_args(args, **kwargs)
+        else:
+            with suppress_stderr():
+                try:
+                    return super().parse_args(args, **kwargs)
+                except SystemExit as e:
+                    raise ValueError
+
+
+def parse_args(pattern, args=None, exit_on_error=None):
     """Shortcut for calling parse_args on the object returned by make_parser."""
-    return make_parser(pattern).parse_args(args)
+    return make_parser(pattern).parse_args(args, exit_on_error=exit_on_error)
 
 
 def make_parser(pattern):
@@ -18,7 +35,7 @@ def make_parser(pattern):
          - a required positional argument, e.g. "infile"
          - an optional positional argument, e.g. "outfile?"
     """
-    parser = argparse.ArgumentParser()
+    parser = ArgumentParser()
     for token in pattern.split():
         add_argument_from_token(parser, token)
     return parser
@@ -69,3 +86,11 @@ def add_argument_from_token(parser, token):
     # anything else is interpreted as a required positional argument
     else:
         parser.add_argument(token)
+
+
+@contextlib.contextmanager
+def suppress_stderr():
+    old_stderr = sys.stderr
+    sys.stderr = io.StringIO()
+    yield
+    sys.stderr = old_stderr
