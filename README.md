@@ -5,7 +5,7 @@ A command line argument parsing library for Python that isn't completely insane.
 ## Usage
 
 ```python
->>> parser = arguable.make_parser('-vv infile outfile?')
+>>> parser = arguable.make_parser('-vv[verbosity] infile outfile?')
 >>> args = parser.parse_args(['-vvv', 'input.xml'])
 >>> args.verbosity
 3
