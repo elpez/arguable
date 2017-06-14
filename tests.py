@@ -4,6 +4,7 @@ import unittest
 import contextlib
 import io
 import sys
+import os
 
 import arguable
 
@@ -73,6 +74,27 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(args.x, 'foo')
         self.assertEqual(args.y, [])
         self.assertEqual(args.v, True)
+
+
+    def test_type(self):
+        parser = arguable.make_parser('x:int y:int?')
+        args = parser.parse_args(['10', '7'])
+        self.assertEqual(args.x, 10)
+        self.assertEqual(args.y, 7)
+        # make sure that y is really optional
+        args = parser.parse_args(['10'])
+
+        args = arguable.parse_args('x:float', ['7.8'])
+        self.assertEqual(args.x, 7.8)
+
+        args = arguable.parse_args('x:wfile', ['tmpfile'])
+        self.assertIsInstance(args.x, io.IOBase)
+        args.x.close()
+
+        args = arguable.parse_args('x:rfile', ['tmpfile'])
+        self.assertIsInstance(args.x, io.IOBase)
+        args.x.close()
+        os.remove(args.x.name)
 
 
     def test_full(self):

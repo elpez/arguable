@@ -40,6 +40,14 @@ def make_parser(pattern):
         add_argument_from_token(parser, token)
     return parser
 
+_type_map = {
+    'int':int,
+    'bool':bool,
+    'str':str,
+    'float':float,
+    'rfile':argparse.FileType('r'),
+    'wfile':argparse.FileType('w'),
+}
 def add_argument_from_token(parser, token):
     if token.startswith('--'):
         parser.add_argument(token, action='store_true')
@@ -77,15 +85,28 @@ def add_argument_from_token(parser, token):
     # foo...? gather all remaining positional arguments, but doesn't complain if none are left
     elif token.endswith('...?'):
         parser.add_argument(token[:-4], nargs='*')
-    # foo? is an optional positional argument
-    elif token.endswith('?'):
-        parser.add_argument(token[:-1], nargs='?')
     # foo... gathers all remaining positional arguments, requiring at least one
     elif token.endswith('...'):
         parser.add_argument(token[:-3], nargs='+')
-    # anything else is interpreted as a required positional argument
     else:
-        parser.add_argument(token)
+        optional = False
+        if token.endswith('?'):
+            token = token[:-1]
+            optional = True
+        try:
+            token, type_str = token.split(':', maxsplit=1)
+        except ValueError:
+            typ = None
+        else:
+            # a type was specified
+            try:
+                typ = _type_map[type_str]
+            except KeyError:
+                raise SyntaxError('unrecognized type specifier "{}"'.format(type_str))
+        if optional:
+            parser.add_argument(token, nargs='?', type=typ)
+        else:
+            parser.add_argument(token, type=typ)
 
 
 @contextlib.contextmanager
