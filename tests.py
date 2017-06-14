@@ -97,6 +97,16 @@ class ParserTests(unittest.TestCase):
         os.remove(args.x.name)
 
 
+    def test_context_management(self):
+        manager = arguable.MyContextManager()
+        with arguable.parse_args('x', ['whatever']) as args:
+            # add a new argument that is a context manager
+            args.y = manager
+            self.assertFalse(manager.has_exited)
+        # make sure __exit__ is called on the manager
+        self.assertTrue(manager.has_exited)
+
+
     def test_full(self):
         parser = arguable.make_parser('-vv[verbosity]g infile outfile?')
         args = parser.parse_args(['test.xml'])

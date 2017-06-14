@@ -6,18 +6,21 @@ A command line argument parsing library for Python that isn't completely insane.
 
 - A concise but powerful syntax for specifying command line arguments
 - Complete interoperability with the standard `argparse` library
+- Context management for easy handling of file arguments
 - More sensible error handling (unlike `argparse`, `arguable` can be configured to not exit the entire program when parsing fails)
 
 ## Usage
 
+### A simple example
+
 ```python
->>> args = arguable.parse_args('-vv[verbosity]g infile outfile?', ['-vv', '-g', 'in.xml'])
+>>> args = arguable.parse_args('-vv[verbosity]g infile:rfile outfile:wfile?', ['-vv', '-g', 'in.xml'])
 >>> args.verbosity
 2
 >>> args.g
 True
 >>> args.infile
-'in.xml'
+<_io.TextIOWrapper name='in.xml' mode='r' encoding='UTF-8'>
 >>> args.outfile
 None
 ```
@@ -31,6 +34,16 @@ The preceding example is exactly equivalent (albeit six times shorter!) to this 
 >>> parser.add_argument('infile')
 >>> parser.add_argument('outfile', nargs='?')
 >>> args = parser.parser_args(['-vvv', 'input.xml'])
+```
+
+### Using the context management feature
+
+The `Namespace` object returned by the `parse_args` method is a context manager, which makes it easy to process arguments as files:
+
+```python
+>>> with arguable.parse_args('infile:rfile', ['in.xml']) as args:
+...     process_file(args.infile)
+...     # args.infile is closed automatically at the end of the with statement
 ```
 
 ## Documentation
@@ -66,14 +79,20 @@ parse_args(pattern, args=None, exit_on_error=None)
 
 Shortcut for calling `parse_args` on the object returned by `make_parser(pattern)`. Like its counterpart in `argparse`, the `args` argument defaults to `sys.argv` if it is not supplied. See the `arguable.ArgumentParser.parse_args` method for details.
 
-```python
-class arguable.ArgumentParser
-```
+### Modifications to argparse
 
-A subclass of `argparse.ArgumentParser` that overrides the `parse_args` method.
+The `arguable` library overrides two `argparse` classes for improved functionality.
+
+#### ArgumentParser
+
+This subclass of `argparse.ArgumentParser` overrides the `parse_args` method:
 
 ```python
 arguable.ArgumentParser.parse_args(args=None, exit_on_error=None, **kwargs)
 ```
 
 Identical to its `argparse` counterpart except for the `exit_on_error` argument, which lets you control how the parser deals with errors. When it is `False` (the default when `args` is explicitly given), the parser doesn't print anything to `stderr` and raises a `ValueError` instead of exiting. When it is `True` (the default when `args` is omitted and falls back to `sys.argv`), it behaves normally.
+
+#### Namespace
+
+The `argparse.Namespace` class is overrided to implement the `__enter__` and `__exit__` methods that make it a context manager. The `__exit__` method simply calls `__exit__` with the same arguments on each of its variables that are themselves context managers.

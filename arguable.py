@@ -5,18 +5,32 @@ import io
 
 
 class ArgumentParser(argparse.ArgumentParser):
-    def parse_args(self, args=None, exit_on_error=None, **kwargs):
+    def parse_args(self, args=None, namespace=None, exit_on_error=None, **kwargs):
         # set a reasonable default for exit_on_error if not provided
         if exit_on_error is None:
             exit_on_error = bool(args is None)
+        # use the arguable.Namespace class if no namespace is provided
+        if namespace is None:
+            namespace = Namespace()
         if exit_on_error:
-            return super().parse_args(args, **kwargs)
+            return super().parse_args(args, namespace=namespace, **kwargs)
         else:
             with suppress_stderr():
                 try:
-                    return super().parse_args(args, **kwargs)
+                    return super().parse_args(args, namespace=namespace, **kwargs)
                 except SystemExit as e:
                     raise ValueError
+
+class Namespace(argparse.Namespace):
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        ret = False
+        for val in self.__dict__.values():
+            if hasattr(val, '__exit__'):
+                ret |= val.__exit__(*args)
+        return ret
 
 
 def parse_args(pattern, args=None, exit_on_error=None):
@@ -115,3 +129,15 @@ def suppress_stderr():
     sys.stderr = io.StringIO()
     yield
     sys.stderr = old_stderr
+
+class MyContextManager:
+    """Used to test context management on Namespace objects"""
+    def __init__(self):
+        self.has_exited = False
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        self.has_exited = True
+        return False
