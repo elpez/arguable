@@ -107,6 +107,12 @@ class ParserTests(unittest.TestCase):
         self.assertTrue(manager.has_exited)
 
 
+    def test_kwargs(self):
+        parser = arguable.make_parser('', prog='bar', description='foo')
+        self.assertEqual(parser.description, 'foo')
+        self.assertEqual(parser.prog, 'bar')
+
+
     def test_full(self):
         parser = arguable.make_parser('-vv[verbosity]g infile outfile?')
         args = parser.parse_args(['test.xml'])

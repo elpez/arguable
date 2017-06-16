@@ -35,23 +35,25 @@ class Namespace(argparse.Namespace):
         return ret
 
 
-def parse_args(pattern, args=None, exit_on_error=None):
+def parse_args(pattern, args=None, exit_on_error=None, **kwargs):
     """Shortcut for calling parse_args on the object returned by make_parser."""
-    return make_parser(pattern).parse_args(args, exit_on_error=exit_on_error)
+    return make_parser(pattern, **kwargs).parse_args(args, exit_on_error=exit_on_error)
 
 
-def make_parser(pattern):
+def make_parser(pattern, **kwargs):
     """Create an argparse.ArgumentParser object from the argument pattern. The pattern argument
        should be a string of whitespace-separated tokens, where each token is one of:
 
          - one or more flags, e.g. "-vfq". Each flag is added as a separate, optional argument.
-             You can specify long aliases in brackets after the flag, e.g. "-v[verbose]fq"
-         - a repeatable flag, e.g. "-vv".
+           You can specify long aliases in brackets after the flag, e.g. "-v[verbose]fq", and
+           repeatable flags by repeating the letter, e.g. "-fvv[verbose]q"
          - a long option, e.g. "--verbose".
-         - a required positional argument, e.g. "infile"
-         - an optional positional argument, e.g. "outfile?"
+         - a positional argument, e.g. "infile". If the identifier is followed by "?", then it is
+           optional. If it is followed by "...", then it will consume as many command line arguments
+           as possible, requiring at least one. If it is followed by "...?", it will behave the
+           same way as with "..." but won't complain if there are no arguments left.
     """
-    parser = ArgumentParser()
+    parser = ArgumentParser(**kwargs)
     for token in pattern.split():
         add_argument_from_token(parser, token)
     return parser

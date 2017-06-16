@@ -68,7 +68,7 @@ Just drop the `arguable.py` file into your project; it is completely self-contai
 The public API of `arguable` consists of just two functions: `make_parser` to construct a parser, and `parse_args` as a shortcut for constructing a parser and then immediately parsing some arguments.
 
 ```python
-make_parser(pattern)
+make_parser(pattern, **kwargs)
 ```
 
 Return an `arguable.ArgumentParser` object constructed from `pattern`.  The `pattern` argument should be a string consisting of whitespace-separated tokens, where each token is one of:
@@ -82,13 +82,15 @@ Return an `arguable.ArgumentParser` object constructed from `pattern`.  The `pat
 
 The type specifiers are somewhat more restricted than in `argparse`. They must be one of the following: `int, bool, str, float, rfile, wfile`. The `rfile` and `wfile` specifiers correspond to `argparse.FileType('r')` and `argparse.FileType('w')` respectively.
 
+All keyword arguments are forwarded to the `argparse.ArgumentParser` constructor.
+
 Since the return value of `make_parser` is an `arguable.ArgumentParser` object, a subclass of `argparse.ArgumentParser`, you can add any additional arguments that could not be specified in the `arguable` syntax using the regular `argparse` methods.
 
 ```python
-parse_args(pattern, args=None, exit_on_error=None)
+parse_args(pattern, args=None, exit_on_error=None, **kwargs)
 ```
 
-Shortcut for calling `parse_args` on the object returned by `make_parser(pattern)`. Like its counterpart in `argparse`, the `args` argument defaults to `sys.argv` if it is not supplied. See the `arguable.ArgumentParser.parse_args` method for details.
+Shortcut for calling `parse_args` on the object returned by `make_parser(pattern, **kwargs)`. Like its counterpart in `argparse`, the `args` argument defaults to `sys.argv` if it is not supplied. See the `arguable.ArgumentParser.parse_args` method for details.
 
 ### Modifications to argparse
 
