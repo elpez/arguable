@@ -29,7 +29,9 @@ class Namespace(argparse.Namespace):
         ret = False
         for val in self.__dict__.values():
             if hasattr(val, '__exit__'):
-                ret |= val.__exit__(*args)
+                exit_val = val.__exit__(*args)
+                if exit_val is True:
+                    ret = True
         return ret
 
 

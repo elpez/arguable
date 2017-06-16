@@ -1,6 +1,6 @@
 # Arguable
 
-A command line argument parsing library for Python that isn't completely insane.
+A simple, usable command line argument parsing library for Python.
 
 ## Features
 
@@ -25,18 +25,18 @@ True
 None
 ```
 
-The preceding example is exactly equivalent (albeit six times shorter!) to this `argparse` code:
+To achieve this in `argparse` you'd have to do:
 
 ```python
 >>> parser = argparse.ArgumentParser()
 >>> parser.add_argument('-v', action='count', default=0)
 >>> parser.add_argument('-g', action='store_true')
->>> parser.add_argument('infile')
->>> parser.add_argument('outfile', nargs='?')
+>>> parser.add_argument('infile', type=argparse.FileType('r'))
+>>> parser.add_argument('outfile', nargs='?', type=argparse.FileType('w'))
 >>> args = parser.parser_args(['-vvv', 'input.xml'])
 ```
 
-### Using the context management feature
+### Managing files
 
 The `Namespace` object returned by the `parse_args` method is a context manager, which makes it easy to process arguments as files:
 
@@ -44,6 +44,17 @@ The `Namespace` object returned by the `parse_args` method is a context manager,
 >>> with arguable.parse_args('infile:rfile', ['in.xml']) as args:
 ...     process_file(args.infile)
 ...     # args.infile is closed automatically at the end of the with statement
+```
+
+### Integration with argparse
+
+Since the return value of `make_parser` is a subclass of `arguable.ArgumentParser`, you can do all the regular things, in case you need an advanced feature that `arguable` doesn't support.
+
+```python
+>>> parser = arguable.make_parser('infile:rfile -vv[verbosity]')
+>>> parser.add_argument('--foo', action='append') # some advanced argparse functionality
+>>> with parser.parse_args(['in.xml', '-vvvv', '--foo', '1', '--foo', '2']) as args:
+...     # do whatever
 ```
 
 ## Documentation
@@ -95,4 +106,4 @@ Identical to its `argparse` counterpart except for the `exit_on_error` argument,
 
 #### Namespace
 
-The `argparse.Namespace` class is overrided to implement the `__enter__` and `__exit__` methods that make it a context manager. The `__exit__` method simply calls `__exit__` with the same arguments on each of its variables that are themselves context managers.
+The `argparse.Namespace` class is overrided to implement the `__enter__` and `__exit__` methods that make it a context manager. The `__exit__` method iterates over its attributes and calls `__exit__` on each of them that are themselves context managers.
