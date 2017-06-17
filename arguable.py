@@ -101,22 +101,17 @@ def add_argument_from_token(parser, token):
        flag token like "-vfg", i.e. it should be something yielded from yield_tokens.
     """
     if len(token) >= 2 and token[0] == '-' and token[1] != '-':
-        try:
-            token, long_name = token.split('[', maxsplit=1)
-            long_name = long_name.rstrip(']')
-        # the split failed
-        except ValueError:
-            # a repeated flag
-            if len(token) == 3:
-                parser.add_argument(token[:2], action='count', default=0)
-            else:
-                parser.add_argument(token, action='store_true')
-        # the split succeeded (a verbose name was provided)
+        token, long_name = determine_long_name(token)
+        # a repeated flag
+        if len(token) == 3:
+            token = token[:-1]
+            kwargs = {'action':'count', 'default':0}
         else:
-            if len(token) == 3:
-                parser.add_argument(token[:2], '--'+long_name, action='count', default=0)
-            else:
-                parser.add_argument(token, '--'+long_name, action='store_true')
+            kwargs = {'action':'store_true'}
+        if long_name:
+            parser.add_argument(token, '--'+long_name, **kwargs)
+        else:
+            parser.add_argument(token, **kwargs)
     else:
         token, nargs = determine_nargs(token)
         token, typ = determine_type(token)
@@ -128,6 +123,18 @@ def add_argument_from_token(parser, token):
                 parser.add_argument(token, nargs=nargs, type=typ)
         else:
             parser.add_argument(token, nargs=nargs, type=typ)
+
+def determine_long_name(token):
+    """Return (token, long_name)"""
+    try:
+        token, long_name = token.split('[', maxsplit=1)
+        long_name = long_name.rstrip(']')
+    # the split failed
+    except ValueError:
+        return (token, '')
+    # the split succeeded (a verbose name was provided)
+    else:
+        return (token, long_name)
 
 def determine_nargs(token):
     """Return (token, nargs)"""
