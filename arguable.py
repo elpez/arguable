@@ -58,9 +58,103 @@ def make_parser(pattern, **kwargs):
          - "...n" where n is a positive integer, to consume n arguments
     """
     parser = ArgumentParser(**kwargs)
-    for token in pattern.split():
+    for token in yield_tokens(pattern):
         add_argument_from_token(parser, token)
     return parser
+
+def yield_tokens(pattern):
+    """Yield successive tokens from the pattern.
+
+       The main purpose of this function is to split combined flag arguments like "-vfg" into
+       separate flags like "-v", "-f" and "-g".
+    """
+    for token in pattern.split():
+        if len(token) >= 2 and token[0] == '-' and token[1] != '-':
+            i = 1
+            while i < len(token):
+                if i < len(token) - 1:
+                    # a flag (repeated or not) with a verbose name in brackets
+                    # ex. "o[object]", "vv[verbose]"
+                    if token[i+1] == '[' or (token[i] == token[i+1] and i < len(token) - 2 and
+                                             token[i+2] == '['):
+                        end = token.find(']', i+2)
+                        if end == -1:
+                            raise SyntaxError('"[" in {} needs a closing "]"'.format(token))
+                        yield '-' + token[i:end+1]
+                        i = end + 1
+                    # a repeated flag, ex. "vv"
+                    elif token[i] == token[i+1]:
+                        yield '-' + token[i:i+2]
+                        i += 2
+                    # a normal flag
+                    else:
+                        yield '-' + token[i]
+                        i += 1
+                else:
+                    yield '-' + token[i]
+                    i += 1
+        else:
+            yield token
+
+def add_argument_from_token(parser, token):
+    """Add an argument to the parser based on the token. The token should not be a combined short
+       flag token like "-vfg", i.e. it should be something yielded from yield_tokens.
+    """
+    if len(token) >= 2 and token[0] == '-' and token[1] != '-':
+        try:
+            token, long_name = token.split('[', maxsplit=1)
+            long_name = long_name.rstrip(']')
+        # the split failed
+        except ValueError:
+            # a repeated flag
+            if len(token) == 3:
+                parser.add_argument(token[:2], action='count', default=0)
+            else:
+                parser.add_argument(token, action='store_true')
+        # the split succeeded (a verbose name was provided)
+        else:
+            if len(token) == 3:
+                parser.add_argument(token[:2], '--'+long_name, action='count', default=0)
+            else:
+                parser.add_argument(token, '--'+long_name, action='store_true')
+    else:
+        token, nargs = determine_nargs(token)
+        token, typ = determine_type(token)
+        if token.startswith('--'):
+            # long flags default to being optional
+            if (nargs is None or nargs == '?') and typ is None:
+                parser.add_argument(token, action='store_true')
+            else:
+                parser.add_argument(token, nargs=nargs, type=typ)
+        else:
+            parser.add_argument(token, nargs=nargs, type=typ)
+
+def determine_nargs(token):
+    """Return (token, nargs)"""
+    try:
+        token, end = token.split('...', maxsplit=1)
+    # the split failed
+    except ValueError:
+        if token.endswith('?'):
+            return (token[:-1], '?')
+        else:
+            return (token, None)
+    # the split succeeded
+    else:
+        if end == '?':
+            # foo...? gathers all remaining positional arguments, but doesn't complain if none are 
+            # left
+            return (token, '*')
+        elif end == '':
+            # foo... gathers all remaining positional arguments, requiring at least one
+            return (token, '+')
+        else:
+            # foo...n gathers n remaining positional arguments
+            try:
+                return (token, int(end))
+            except ValueError:
+                msg = '"..." must be followed by nothing, "?" or an integer, not {}'.format(end)
+                raise SyntaxError(msg)
 
 _type_map = {
     'int':int,
@@ -70,74 +164,19 @@ _type_map = {
     'rfile':argparse.FileType('r'),
     'wfile':argparse.FileType('w'),
 }
-_pattern = re.compile(r'\.\.\.[0-9]+$')
-def add_argument_from_token(parser, token):
-    if token.startswith('--'):
-        if _pattern.search(token):
-            token, arity = token.split('...', maxsplit=1)
-            parser.add_argument(token, nargs=int(arity))
-        else:
-            parser.add_argument(token, action='store_true')
-    elif token.startswith('-'):
-        # -ofv[verbose]... is a series of optional flags, -o -f and -v, where -v has a long
-        # counterpart --verbose
-        i = 1
-        doing_repeat = False
-        while i < len(token):
-            flag = token[i]
-            # handle long names
-            if i < len(token) - 1 and token[i+1] == '[':
-                end = token.find(']', i + 2)
-                if end != -1:
-                    long_name = token[i+2:end]
-                    if doing_repeat:
-                        parser.add_argument('-'+flag, '--'+long_name, action='count', default=0)
-                        doing_repeat = False
-                    else:
-                        parser.add_argument('-'+flag, '--'+long_name, action='store_true')
-                    i = end + 1
-                else:
-                    msg = 'long name "{}" needs a terminating "]"'.format(token[i+1:])
-                    raise SyntaxError(msg)
-            # handle repeated flags, e.g. -vv
-            elif i < len(token) - 1 and token[i+1] == flag:
-                doing_repeat = True
-                i += 1
-            else:
-                if doing_repeat:
-                    parser.add_argument('-'+flag, action='count', default=0)
-                else:
-                    parser.add_argument('-'+flag, action='store_true')
-                i += 1
-    # foo...? gather all remaining positional arguments, but doesn't complain if none are left
-    elif token.endswith('...?'):
-        parser.add_argument(token[:-4], nargs='*')
-    # foo... gathers all remaining positional arguments, requiring at least one
-    elif token.endswith('...'):
-        parser.add_argument(token[:-3], nargs='+')
-    # foo...n gathers n remaining positional arguments
-    elif _pattern.search(token):
-        token, arity = token.split('...', maxsplit=1)
-        parser.add_argument(token, nargs=int(arity))
+def determine_type(token):
+    """Return (token, type)"""
+    try:
+        token, type_str = token.split(':', maxsplit=1)
+    # the split failed
+    except ValueError:
+        return (token, None)
+    # the split succeeded (a type was specified)
     else:
-        optional = False
-        if token.endswith('?'):
-            token = token[:-1]
-            optional = True
         try:
-            token, type_str = token.split(':', maxsplit=1)
-        except ValueError:
-            typ = None
-        else:
-            # a type was specified
-            try:
-                typ = _type_map[type_str]
-            except KeyError:
-                raise SyntaxError('unrecognized type specifier "{}"'.format(type_str))
-        if optional:
-            parser.add_argument(token, nargs='?', type=typ)
-        else:
-            parser.add_argument(token, type=typ)
+            return (token, _type_map[type_str])
+        except KeyError:
+            raise SyntaxError('unrecognized type specifier "{}"'.format(type_str))
 
 
 @contextlib.contextmanager

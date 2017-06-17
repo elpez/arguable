@@ -122,24 +122,34 @@ class ParserTests(unittest.TestCase):
 
 
     def test_full(self):
-        parser = arguable.make_parser('-vv[verbosity]g infile outfile?')
+        parser = arguable.make_parser('-vv[verbosity]g infile outfile? foo:int...?')
         args = parser.parse_args(['test.xml'])
         self.assertEqual(args.verbosity, 0)
         self.assertEqual(args.g, False)
         self.assertEqual(args.infile, 'test.xml')
         self.assertEqual(args.outfile, None)
+        self.assertEqual(args.foo, [])
 
         args = parser.parse_args(['test.xml', '-v'])
         self.assertEqual(args.verbosity, 1)
         self.assertEqual(args.g, False)
         self.assertEqual(args.infile, 'test.xml')
         self.assertEqual(args.outfile, None)
+        self.assertEqual(args.foo, [])
 
         args = parser.parse_args(['-vv', '-g', 'test.xml', 'out.html'])
         self.assertEqual(args.verbosity, 2)
         self.assertEqual(args.g, True)
         self.assertEqual(args.infile, 'test.xml')
         self.assertEqual(args.outfile, 'out.html')
+        self.assertEqual(args.foo, [])
+
+        args = parser.parse_args(['-vv', '-g', 'test.xml', 'out.html', '1', '2', '3'])
+        self.assertEqual(args.verbosity, 2)
+        self.assertEqual(args.g, True)
+        self.assertEqual(args.infile, 'test.xml')
+        self.assertEqual(args.outfile, 'out.html')
+        self.assertEqual(args.foo, [1, 2, 3])
 
 
 if __name__ == '__main__':
