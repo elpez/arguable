@@ -33,7 +33,7 @@ Compare this to the equivalent `argparse` code (it's six times longer!):
 >>> parser.add_argument('-g', action='store_true')
 >>> parser.add_argument('infile', type=argparse.FileType('r'))
 >>> parser.add_argument('outfile', nargs='?', type=argparse.FileType('w'))
->>> args = parser.parser_args(['-vv', '-g', 'input.xml'])
+>>> args = parser.parser_args(['-vv', '-g', 'in.xml'])
 ```
 
 ### Managing files
@@ -69,13 +69,11 @@ You can still do all the regular `argparse` things, in case you need an advanced
 ...     # do whatever
 ```
 
+## Installation
+
+Just drop the `arguable.py` file into your project; it is completely self-contained. `arguable` has no dependencies on third-party packages, however it is (for now) only guaranteed to work with Python 3.4. It does not work with Python 2.
+
 ## Documentation
-
-### Installation
-
-Just drop the `arguable.py` file into your project; it is completely self-contained.
-
-### API
 
 `arguable` defines a single public method, `parse_args`, and two classes that override their `argparse` counterparts, `ArgumentParser` and `Namespace`.
 
@@ -86,7 +84,7 @@ def parse_args(pattern, args=None, exit_on_error=None, **kwargs):
 
 Shortcut for calling `ArgumentParser(pattern, **kwargs).parse_args(args=args, exit_on_error=exit_on_error)`. Useful if you have no need for the underlying `ArgumentParser` object.
 
-#### ArgumentParser
+### ArgumentParser
 
 ```python
 def __init__(self, pattern, *args, **kwargs):
@@ -114,6 +112,6 @@ def parse_args(self, args=None, exit_on_error=None, **kwargs):
 
 Identical to its `argparse` counterpart except for the `exit_on_error` argument, which lets you control how the parser deals with errors. When it is `False` (the default when `args` is explicitly given), the parser doesn't print anything to `stderr` and raises a `ValueError` instead of exiting. When it is `True` (the default when `args` is omitted and falls back to `sys.argv`), it behaves normally.
 
-#### Namespace
+### Namespace
 
-The `argparse.Namespace` class is overrided to implement the `__enter__` and `__exit__` methods that make it a context manager. The `__exit__` method iterates over its attributes and calls `__exit__` on each of them that are themselves context managers.
+The `argparse.Namespace` class is overrided to implement the `__enter__` and `__exit__` methods that make it a context manager. The `__exit__` method iterates over its attributes and calls `__exit__` on each of them that are themselves context managers. In all other respects it is identical to its `argparse` counterpart.
