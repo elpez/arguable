@@ -33,7 +33,7 @@ class ParserTests(unittest.TestCase):
 
         with self.assertRaises(SyntaxError):
             # forgot the ending ']'
-            arguable.make_parser('-fov[verbose')
+            arguable.ArgumentParser('-fov[verbose')
 
         # with repeated options
         args = arguable.parse_args('-fvv[verbose]o', ['-vvvv', '-f'])
@@ -43,7 +43,7 @@ class ParserTests(unittest.TestCase):
 
 
     def test_repeatable(self):
-        parser = arguable.make_parser('-vv')
+        parser = arguable.ArgumentParser('-vv')
         args = parser.parse_args([])
         self.assertEqual(args.v, 0)
 
@@ -55,7 +55,7 @@ class ParserTests(unittest.TestCase):
 
 
     def test_gathering(self):
-        parser = arguable.make_parser('-v x y...')
+        parser = arguable.ArgumentParser('-v x y...')
         args = parser.parse_args(['foo', 'bar', 'baz', '-v'])
         self.assertEqual(args.x, 'foo')
         self.assertEqual(args.y, ['bar', 'baz'])
@@ -64,7 +64,7 @@ class ParserTests(unittest.TestCase):
             # y requires at least one argument
             parser.parse_args(['1'])
 
-        parser = arguable.make_parser('-v x y...?')
+        parser = arguable.ArgumentParser('-v x y...?')
         args = parser.parse_args(['foo', 'bar', 'baz', '-v'])
         self.assertEqual(args.x, 'foo')
         self.assertEqual(args.y, ['bar', 'baz'])
@@ -77,7 +77,7 @@ class ParserTests(unittest.TestCase):
 
 
     def test_type(self):
-        parser = arguable.make_parser('x:int y:int?')
+        parser = arguable.ArgumentParser('x:int y:int?')
         args = parser.parse_args(['10', '7'])
         self.assertEqual(args.x, 10)
         self.assertEqual(args.y, 7)
@@ -108,13 +108,13 @@ class ParserTests(unittest.TestCase):
 
 
     def test_kwargs(self):
-        parser = arguable.make_parser('', prog='bar', description='foo')
+        parser = arguable.ArgumentParser('', prog='bar', description='foo')
         self.assertEqual(parser.description, 'foo')
         self.assertEqual(parser.prog, 'bar')
 
     
     def test_arbitrary_arity(self):
-        parser = arguable.make_parser('foo...3 bar...2 --baz...1')
+        parser = arguable.ArgumentParser('foo...3 bar...2 --baz...1')
         args = parser.parse_args(['1', '2', '3', '4', '5', '--baz', '6'])
         self.assertEqual(args.foo, ['1', '2', '3'])
         self.assertEqual(args.bar, ['4', '5'])
@@ -122,7 +122,7 @@ class ParserTests(unittest.TestCase):
 
 
     def test_full(self):
-        parser = arguable.make_parser('-vv[verbosity]g infile outfile? foo:int...?')
+        parser = arguable.ArgumentParser('-vv[verbosity]g infile outfile? foo:int...?')
         args = parser.parse_args(['test.xml'])
         self.assertEqual(args.verbosity, 0)
         self.assertEqual(args.g, False)

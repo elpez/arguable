@@ -6,7 +6,7 @@ A simple, easy-to-use command line argument parsing library for Python.
 
 - A concise but powerful syntax for specifying command line arguments
 - Context management for easy handling of file arguments
-- Complete interoperability with the standard `argparse` library
+- Drop-in replacement for `argparse`
 - More sensible error handling (unlike `argparse`, `arguable` can be configured to not exit the entire program when parsing fails)
 
 ## Usage
@@ -60,10 +60,10 @@ It's easy to specify the exact number and type of command line arguments that sh
 
 ### Integration with argparse
 
-Since the return value of `make_parser` is a subclass of `arguable.ArgumentParser`, you can do all the regular things, in case you need an advanced feature that `arguable` doesn't support.
+You can still do all the regular `argparse` things, in case you need an advanced feature that `arguable` doesn't support.
 
 ```python
->>> parser = arguable.make_parser('infile:rfile -vv[verbosity]')
+>>> parser = arguable.ArgumentParser('infile:rfile -vv[verbosity]')
 >>> parser.add_argument('--foo', action='append') # some advanced argparse functionality
 >>> with parser.parse_args(['in.xml', '-vvvv', '--foo', '1', '--foo', '2']) as args:
 ...     # do whatever
@@ -71,21 +71,27 @@ Since the return value of `make_parser` is a subclass of `arguable.ArgumentParse
 
 ## Documentation
 
-`arguable` is designed with usability in mind--you should be able to figure out how to do most things just by looking at the examples above. But if you want the gory details, read on...
-
 ### Installation
 
 Just drop the `arguable.py` file into your project; it is completely self-contained.
 
 ### API
 
-The public API of `arguable` consists of just two functions: `make_parser` to construct a parser, and `parse_args` as a shortcut for constructing a parser and then immediately parsing some arguments.
+`arguable` defines a single public method, `parse_args`, and two classes that override their `argparse` counterparts, `ArgumentParser` and `Namespace`.
 
 ```python
-make_parser(pattern, **kwargs)
+parse_args(pattern, args=None, exit_on_error=None, **kwargs)
 ```
 
-Return an `arguable.ArgumentParser` object constructed from `pattern`.  The `pattern` argument should be a string consisting of whitespace-separated tokens, where each token is either:
+Shortcut for calling `ArgumentParser(pattern, **kwargs).parse_args(args=args, exit_on_error=exit_on_error)`. Useful if you have no need for the underlying `ArgumentParser` object.
+
+#### ArgumentParser
+
+```python
+def __init__(self, pattern, *args, **kwargs)
+```
+
+Construct a parser from `pattern`.  The `pattern` argument should be a string consisting of whitespace-separated tokens, where each token is either:
 
 - A positional argument or long flag, e.g. `infile` or `--verbose`. 
   - These can be given a type specifier (one of `int`, `bool`, `str`, `float`, `rfile`, `wfile`) preceded by a colon, e.g. `infile:rfile`. The `rfile` and `wfile` specifiers correspond to `argparse.FileType('r')` and `argparse.FileType('w')` respectively.
@@ -97,26 +103,10 @@ Return an `arguable.ArgumentParser` object constructed from `pattern`.  The `pat
   - The flag name may be succeeded by a verbose name in brackets, e.g. `-v[verbose]`. This can be combined with the syntax for repeated flags, e.g. `-vv[verbose]`.
   - Multiple flags can be combined in a single token, e.g. `-fovv[verbose]g[debug]`.
 
-All keyword arguments are forwarded to the `argparse.ArgumentParser` constructor.
-
-Since the return value of `make_parser` is an `arguable.ArgumentParser` object, a subclass of `argparse.ArgumentParser`, you can add any additional arguments that could not be specified in the `arguable` syntax using the regular `argparse` methods.
+All the other positional and keyword arguments are forwarded to the `argparse.ArgumentParser` constructor.
 
 ```python
-parse_args(pattern, args=None, exit_on_error=None, **kwargs)
-```
-
-Shortcut for calling `parse_args` on the object returned by `make_parser(pattern, **kwargs)`. Like its counterpart in `argparse`, the `args` argument defaults to `sys.argv` if it is not explicitly supplied. See the `arguable.ArgumentParser.parse_args` method for details.
-
-### Modifications to argparse
-
-The `arguable` library overrides two `argparse` classes for improved functionality.
-
-#### ArgumentParser
-
-This subclass of `argparse.ArgumentParser` overrides the `parse_args` method:
-
-```python
-arguable.ArgumentParser.parse_args(args=None, exit_on_error=None, **kwargs)
+def parse_args(self, args=None, exit_on_error=None, **kwargs)
 ```
 
 Identical to its `argparse` counterpart except for the `exit_on_error` argument, which lets you control how the parser deals with errors. When it is `False` (the default when `args` is explicitly given), the parser doesn't print anything to `stderr` and raises a `ValueError` instead of exiting. When it is `True` (the default when `args` is omitted and falls back to `sys.argv`), it behaves normally.

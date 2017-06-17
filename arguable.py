@@ -6,6 +6,54 @@ import re
 
 
 class ArgumentParser(argparse.ArgumentParser):
+    def __init__(self, pattern, *args, **kwargs):
+        """Create an argparse.ArgumentParser object from the argument pattern. The pattern argument
+           should be a string of whitespace-separated tokens, where each token is one of:
+
+             - one or more flags, e.g. "-vfq". Each flag is added as a separate, optional argument.
+               You can specify long aliases in brackets after the flag, e.g. "-v[verbose]fq", and
+               repeatable flags by repeating the letter, e.g. "-fvv[verbose]q"
+             - a long option, e.g. "--verbose".
+             - a positional argument, e.g. "infile". If it is followed by "?", then it is optional 
+               (otherwise it is required). 
+
+           The arity of positional arguments and long options can be set with:
+             - "..." to consume all remaining command line arguments, requiring at least one
+             - "...?" to consume all remaining command line arguments, requiring none
+             - "...n" where n is a positive integer, to consume n arguments
+        """
+        super().__init__(*args, **kwargs)
+        for token in yield_tokens(pattern):
+            self._add_argument_from_token(token)
+
+    def _add_argument_from_token(self, token):
+        """Add an argument based on the token. The token should not be a combined short flag token 
+           like "-vfg", i.e. it should be something yielded from yield_tokens.
+        """
+        if len(token) >= 2 and token[0] == '-' and token[1] != '-':
+            token, long_name = determine_long_name(token)
+            # a repeated flag
+            if len(token) == 3:
+                token = token[:-1]
+                kwargs = {'action':'count', 'default':0}
+            else:
+                kwargs = {'action':'store_true'}
+            if long_name:
+                self.add_argument(token, '--'+long_name, **kwargs)
+            else:
+                self.add_argument(token, **kwargs)
+        else:
+            token, nargs = determine_nargs(token)
+            token, typ = determine_type(token)
+            if token.startswith('--'):
+                # long flags default to being optional
+                if (nargs is None or nargs == '?') and typ is None:
+                    self.add_argument(token, action='store_true')
+                else:
+                    self.add_argument(token, nargs=nargs, type=typ)
+            else:
+                self.add_argument(token, nargs=nargs, type=typ)
+
     def parse_args(self, args=None, namespace=None, exit_on_error=None, **kwargs):
         # set a reasonable default for exit_on_error if not provided
         if exit_on_error is None:
@@ -37,30 +85,9 @@ class Namespace(argparse.Namespace):
 
 
 def parse_args(pattern, args=None, exit_on_error=None, **kwargs):
-    """Shortcut for calling parse_args on the object returned by make_parser."""
-    return make_parser(pattern, **kwargs).parse_args(args, exit_on_error=exit_on_error)
+    """Shortcut for calling parse_args on an ArgumentParser."""
+    return ArgumentParser(pattern, **kwargs).parse_args(args, exit_on_error=exit_on_error)
 
-
-def make_parser(pattern, **kwargs):
-    """Create an argparse.ArgumentParser object from the argument pattern. The pattern argument
-       should be a string of whitespace-separated tokens, where each token is one of:
-
-         - one or more flags, e.g. "-vfq". Each flag is added as a separate, optional argument.
-           You can specify long aliases in brackets after the flag, e.g. "-v[verbose]fq", and
-           repeatable flags by repeating the letter, e.g. "-fvv[verbose]q"
-         - a long option, e.g. "--verbose".
-         - a positional argument, e.g. "infile". If it is followed by "?", then it is optional 
-           (otherwise it is required). 
-
-       The arity of positional arguments and long options can be modified by following them with:
-         - "..." to consume all remaining command line arguments, requiring at least one
-         - "...?" to consume all remaining command line arguments, requiring none
-         - "...n" where n is a positive integer, to consume n arguments
-    """
-    parser = ArgumentParser(**kwargs)
-    for token in yield_tokens(pattern):
-        add_argument_from_token(parser, token)
-    return parser
 
 def yield_tokens(pattern):
     """Yield successive tokens from the pattern.
@@ -95,34 +122,6 @@ def yield_tokens(pattern):
                     i += 1
         else:
             yield token
-
-def add_argument_from_token(parser, token):
-    """Add an argument to the parser based on the token. The token should not be a combined short
-       flag token like "-vfg", i.e. it should be something yielded from yield_tokens.
-    """
-    if len(token) >= 2 and token[0] == '-' and token[1] != '-':
-        token, long_name = determine_long_name(token)
-        # a repeated flag
-        if len(token) == 3:
-            token = token[:-1]
-            kwargs = {'action':'count', 'default':0}
-        else:
-            kwargs = {'action':'store_true'}
-        if long_name:
-            parser.add_argument(token, '--'+long_name, **kwargs)
-        else:
-            parser.add_argument(token, **kwargs)
-    else:
-        token, nargs = determine_nargs(token)
-        token, typ = determine_type(token)
-        if token.startswith('--'):
-            # long flags default to being optional
-            if (nargs is None or nargs == '?') and typ is None:
-                parser.add_argument(token, action='store_true')
-            else:
-                parser.add_argument(token, nargs=nargs, type=typ)
-        else:
-            parser.add_argument(token, nargs=nargs, type=typ)
 
 def determine_long_name(token):
     """Return (token, long_name)"""
