@@ -1,17 +1,17 @@
 # Arguable
 
-A simple, usable command line argument parsing library for Python.
+A simple, easy-to-use command line argument parsing library for Python.
 
 ## Features
 
 - A concise but powerful syntax for specifying command line arguments
-- Complete interoperability with the standard `argparse` library
 - Context management for easy handling of file arguments
+- Complete interoperability with the standard `argparse` library
 - More sensible error handling (unlike `argparse`, `arguable` can be configured to not exit the entire program when parsing fails)
 
 ## Usage
 
-### A simple example
+### A full example
 
 ```python
 >>> args = arguable.parse_args('-vv[verbosity]g infile:rfile outfile:wfile?', ['-vv', '-g', 'in.xml'])
@@ -25,7 +25,7 @@ True
 None
 ```
 
-To achieve this in `argparse` you'd have to do:
+Compare this to the equivalent `argparse` code (it's six times longer!):
 
 ```python
 >>> parser = argparse.ArgumentParser()
@@ -38,12 +38,24 @@ To achieve this in `argparse` you'd have to do:
 
 ### Managing files
 
-The `Namespace` object returned by the `parse_args` method is a context manager, which makes it easy to process arguments as files:
+The `Namespace` object returned by `parse_args` is a context manager, which makes it easy to process arguments as files:
 
 ```python
 >>> with arguable.parse_args('infile:rfile', ['in.xml']) as args:
 ...     process_file(args.infile)
 ...     # args.infile is closed automatically at the end of the with statement
+```
+
+### Another example
+
+It's easy to specify the exact number and type of command line arguments that should be consumed:
+
+```python
+>>> args = arguable.parse_args('foo:int...3  bar:float...2', ['1', '2', '3', '4', '5'])
+>>> args.foo
+[1, 2, 3]
+>>> args.bar
+[4.0, 5.0]
 ```
 
 ### Integration with argparse
@@ -59,6 +71,8 @@ Since the return value of `make_parser` is a subclass of `arguable.ArgumentParse
 
 ## Documentation
 
+`arguable` is designed with usability in mind--you should be able to figure out how to do most things just by looking at the examples above. But if you want the gory details, read on...
+
 ### Installation
 
 Just drop the `arguable.py` file into your project; it is completely self-contained.
@@ -71,17 +85,17 @@ The public API of `arguable` consists of just two functions: `make_parser` to co
 make_parser(pattern, **kwargs)
 ```
 
-Return an `arguable.ArgumentParser` object constructed from `pattern`.  The `pattern` argument should be a string consisting of whitespace-separated tokens, where each token is one of:
+Return an `arguable.ArgumentParser` object constructed from `pattern`.  The `pattern` argument should be a string consisting of whitespace-separated tokens, where each token is either:
 
-- A required positional argument, with no special syntax, e.g. `infile`. A type specificer can be given, preceded by a colon and *no whitespace*, e.g. `x:int`.
-- An optional positional argument, specified by a trailing question mark, e.g. `outfile?`. Optional arguments can also take type specifiers, e.g. `x:int?`.
-- A series of one-letter flags, e.g. `-vfo`. These are interpreted as optional flags that take no arguments. You can give them a long name by following the one-letter abbreviation with the full name in brackets, e.g. `-v[verbosity]`. By default, these flags are given the `store_true` action. If you want the number of occurences to be counted instead, simply repeat the one-letter abbreviation in the pattern string, e.g. `-vv`. All of these can be combined in a single string, so a moderately complex example might be `-vv[verbosity]fo`, which makes three flags: a repeatable `-v` flag aliased to `--verbosity`, and two optional flags `-f` and `-o`.
-- A single long flag with no abbreviation, e.g. `--verbosity`.
-- All positional arguments grouped into a list, requiring at least one, specified by a trailing `...`, e.g. `files...`
-- All positional arguments grouped into a list, but without complaining if none are supplied, specified by a trailing `...?`, e.g. `files...?`
-- A specific number of positional arguments, e.g. `foo...3`. This also works with long options: `--bar...2`.
-
-The type specifiers are somewhat more restricted than in `argparse`. They must be one of the following: `int, bool, str, float, rfile, wfile`. The `rfile` and `wfile` specifiers correspond to `argparse.FileType('r')` and `argparse.FileType('w')` respectively.
+- A positional argument or long flag, e.g. `infile` or `--verbose`. 
+  - These can be given a type specifier (one of `int`, `bool`, `str`, `float`, `rfile`, `wfile`) preceded by a colon, e.g. `infile:rfile`. The `rfile` and `wfile` specifiers correspond to `argparse.FileType('r')` and `argparse.FileType('w')` respectively.
+  - They can have a specified arity (one of `...`,  `...?`, `...n` where `n` is a positive integer) after the type specifier. The `...` arity specifier means "consume all remaining positional arguments, requiring at least one", `...?` means "consume all remaining positional arguments but don't complain if none are left", and `...n` means "consume exactly `n` of the remaining positional arguments."
+  - The only difference between a positional argument and a long flag is that by default the former is required and consume one argument, while the latter is optional and consume no arguments. If either type or arity is specified for a long flag, it behaves exactly the same as a positional argument.
+  - A full example: `summands:int...7` means "consume 7 of the remaining positional arguments, convert each of them into a integer and store them in a list called `summands`."
+- A short flag, e.g. `-v`
+  - If the flag name is repeated (e.g., `-vv`), then the flag is treated as repeatable.
+  - The flag name may be succeeded by a verbose name in brackets, e.g. `-v[verbose]`. This can be combined with the syntax for repeated flags, e.g. `-vv[verbose]`.
+  - Multiple flags can be combined in a single token, e.g. `-fovv[verbose]g[debug]`.
 
 All keyword arguments are forwarded to the `argparse.ArgumentParser` constructor.
 
