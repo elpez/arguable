@@ -33,7 +33,7 @@ Compare this to the equivalent `argparse` code (it's six times longer!):
 >>> parser.add_argument('-g', action='store_true')
 >>> parser.add_argument('infile', type=argparse.FileType('r'))
 >>> parser.add_argument('outfile', nargs='?', type=argparse.FileType('w'))
->>> args = parser.parser_args(['-vvv', 'input.xml'])
+>>> args = parser.parser_args(['-vv', '-g', 'input.xml'])
 ```
 
 ### Managing files
@@ -80,7 +80,8 @@ Just drop the `arguable.py` file into your project; it is completely self-contai
 `arguable` defines a single public method, `parse_args`, and two classes that override their `argparse` counterparts, `ArgumentParser` and `Namespace`.
 
 ```python
-parse_args(pattern, args=None, exit_on_error=None, **kwargs)
+def parse_args(pattern, args=None, exit_on_error=None, **kwargs):
+    ...
 ```
 
 Shortcut for calling `ArgumentParser(pattern, **kwargs).parse_args(args=args, exit_on_error=exit_on_error)`. Useful if you have no need for the underlying `ArgumentParser` object.
@@ -88,7 +89,8 @@ Shortcut for calling `ArgumentParser(pattern, **kwargs).parse_args(args=args, ex
 #### ArgumentParser
 
 ```python
-def __init__(self, pattern, *args, **kwargs)
+def __init__(self, pattern, *args, **kwargs):
+    ...
 ```
 
 Construct a parser from `pattern`.  The `pattern` argument should be a string consisting of whitespace-separated tokens, where each token is either:
@@ -103,10 +105,11 @@ Construct a parser from `pattern`.  The `pattern` argument should be a string co
   - The flag name may be succeeded by a verbose name in brackets, e.g. `-v[verbose]`. This can be combined with the syntax for repeated flags, e.g. `-vv[verbose]`.
   - Multiple flags can be combined in a single token, e.g. `-fovv[verbose]g[debug]`.
 
-All the other positional and keyword arguments are forwarded to the `argparse.ArgumentParser` constructor.
+The remaining positional and keyword arguments to `__init__` are forwarded to the `argparse.ArgumentParser` constructor.
 
 ```python
-def parse_args(self, args=None, exit_on_error=None, **kwargs)
+def parse_args(self, args=None, exit_on_error=None, **kwargs):
+    ...
 ```
 
 Identical to its `argparse` counterpart except for the `exit_on_error` argument, which lets you control how the parser deals with errors. When it is `False` (the default when `args` is explicitly given), the parser doesn't print anything to `stderr` and raises a `ValueError` instead of exiting. When it is `True` (the default when `args` is omitted and falls back to `sys.argv`), it behaves normally.
