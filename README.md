@@ -89,7 +89,7 @@ Return an `arguable.ArgumentParser` object constructed from `pattern`.  The `pat
 
 - A positional argument or long flag, e.g. `infile` or `--verbose`. 
   - These can be given a type specifier (one of `int`, `bool`, `str`, `float`, `rfile`, `wfile`) preceded by a colon, e.g. `infile:rfile`. The `rfile` and `wfile` specifiers correspond to `argparse.FileType('r')` and `argparse.FileType('w')` respectively.
-  - They can have a specified arity (one of `...`,  `...?`, `...n` where `n` is a positive integer) after the type specifier. The `...` arity specifier means "consume all remaining positional arguments, requiring at least one", `...?` means "consume all remaining positional arguments but don't complain if none are left", and `...n` means "consume exactly `n` of the remaining positional arguments."
+  - They can have a specified arity (one of `?`, `...`,  `...?`, `...n` where `n` is a positive integer) after the type specifier. `?` means "optionally consume one argument if present," `...` means "consume all remaining positional arguments, requiring at least one", `...?` means "consume all remaining positional arguments but don't complain if none are left", and `...n` means "consume exactly `n` of the remaining positional arguments."
   - The only difference between a positional argument and a long flag is that by default the former is required and consume one argument, while the latter is optional and consume no arguments. If either type or arity is specified for a long flag, it behaves exactly the same as a positional argument.
   - A full example: `summands:int...7` means "consume 7 of the remaining positional arguments, convert each of them into a integer and store them in a list called `summands`."
 - A short flag, e.g. `-v`
@@ -105,7 +105,7 @@ Since the return value of `make_parser` is an `arguable.ArgumentParser` object, 
 parse_args(pattern, args=None, exit_on_error=None, **kwargs)
 ```
 
-Shortcut for calling `parse_args` on the object returned by `make_parser(pattern, **kwargs)`. Like its counterpart in `argparse`, the `args` argument defaults to `sys.argv` if it is not supplied. See the `arguable.ArgumentParser.parse_args` method for details.
+Shortcut for calling `parse_args` on the object returned by `make_parser(pattern, **kwargs)`. Like its counterpart in `argparse`, the `args` argument defaults to `sys.argv` if it is not explicitly supplied. See the `arguable.ArgumentParser.parse_args` method for details.
 
 ### Modifications to argparse
 
