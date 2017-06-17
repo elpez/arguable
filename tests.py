@@ -112,6 +112,14 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(parser.description, 'foo')
         self.assertEqual(parser.prog, 'bar')
 
+    
+    def test_arbitrary_arity(self):
+        parser = arguable.make_parser('foo...3 bar...2 --baz...1')
+        args = parser.parse_args(['1', '2', '3', '4', '5', '--baz', '6'])
+        self.assertEqual(args.foo, ['1', '2', '3'])
+        self.assertEqual(args.bar, ['4', '5'])
+        self.assertEqual(args.baz, ['6'])
+
 
     def test_full(self):
         parser = arguable.make_parser('-vv[verbosity]g infile outfile?')

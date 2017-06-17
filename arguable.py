@@ -2,6 +2,7 @@ import sys
 import argparse
 import contextlib
 import io
+import re
 
 
 class ArgumentParser(argparse.ArgumentParser):
@@ -48,10 +49,13 @@ def make_parser(pattern, **kwargs):
            You can specify long aliases in brackets after the flag, e.g. "-v[verbose]fq", and
            repeatable flags by repeating the letter, e.g. "-fvv[verbose]q"
          - a long option, e.g. "--verbose".
-         - a positional argument, e.g. "infile". If the identifier is followed by "?", then it is
-           optional. If it is followed by "...", then it will consume as many command line arguments
-           as possible, requiring at least one. If it is followed by "...?", it will behave the
-           same way as with "..." but won't complain if there are no arguments left.
+         - a positional argument, e.g. "infile". If it is followed by "?", then it is optional 
+           (otherwise it is required). 
+
+       The arity of positional arguments and long options can be modified by following them with:
+         - "..." to consume all remaining command line arguments, requiring at least one
+         - "...?" to consume all remaining command line arguments, requiring none
+         - "...n" where n is a positive integer, to consume n arguments
     """
     parser = ArgumentParser(**kwargs)
     for token in pattern.split():
@@ -66,9 +70,14 @@ _type_map = {
     'rfile':argparse.FileType('r'),
     'wfile':argparse.FileType('w'),
 }
+_pattern = re.compile(r'\.\.\.[0-9]+$')
 def add_argument_from_token(parser, token):
     if token.startswith('--'):
-        parser.add_argument(token, action='store_true')
+        if _pattern.search(token):
+            token, arity = token.split('...', maxsplit=1)
+            parser.add_argument(token, nargs=int(arity))
+        else:
+            parser.add_argument(token, action='store_true')
     elif token.startswith('-'):
         # -ofv[verbose]... is a series of optional flags, -o -f and -v, where -v has a long
         # counterpart --verbose
@@ -106,6 +115,10 @@ def add_argument_from_token(parser, token):
     # foo... gathers all remaining positional arguments, requiring at least one
     elif token.endswith('...'):
         parser.add_argument(token[:-3], nargs='+')
+    # foo...n gathers n remaining positional arguments
+    elif _pattern.search(token):
+        token, arity = token.split('...', maxsplit=1)
+        parser.add_argument(token, nargs=int(arity))
     else:
         optional = False
         if token.endswith('?'):

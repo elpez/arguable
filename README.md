@@ -78,7 +78,8 @@ Return an `arguable.ArgumentParser` object constructed from `pattern`.  The `pat
 - A series of one-letter flags, e.g. `-vfo`. These are interpreted as optional flags that take no arguments. You can give them a long name by following the one-letter abbreviation with the full name in brackets, e.g. `-v[verbosity]`. By default, these flags are given the `store_true` action. If you want the number of occurences to be counted instead, simply repeat the one-letter abbreviation in the pattern string, e.g. `-vv`. All of these can be combined in a single string, so a moderately complex example might be `-vv[verbosity]fo`, which makes three flags: a repeatable `-v` flag aliased to `--verbosity`, and two optional flags `-f` and `-o`.
 - A single long flag with no abbreviation, e.g. `--verbosity`.
 - All positional arguments grouped into a list, requiring at least one, specified by a trailing `...`, e.g. `files...`
-- All positional arguments grouped into a list, but without complaining if none are supplied, specificed by a trailing `...?`, e.g. `files...?`
+- All positional arguments grouped into a list, but without complaining if none are supplied, specified by a trailing `...?`, e.g. `files...?`
+- A specific number of positional arguments, e.g. `foo...3`. This also works with long options: `--bar...2`.
 
 The type specifiers are somewhat more restricted than in `argparse`. They must be one of the following: `int, bool, str, float, rfile, wfile`. The `rfile` and `wfile` specifiers correspond to `argparse.FileType('r')` and `argparse.FileType('w')` respectively.
 
