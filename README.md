@@ -7,7 +7,7 @@ A simple, easy-to-use command line argument parsing library for Python.
 - A concise but powerful syntax for specifying command line arguments
 - Context management for easy handling of file arguments
 - Drop-in replacement for `argparse`
-- More sensible error handling (unlike `argparse`, `arguable` can be configured to not exit the entire program when parsing fails)
+- More sensible error handling
 
 ## Usage
 
@@ -60,12 +60,16 @@ It's easy to specify the exact number and type of command line arguments that sh
 
 ### Setting help strings
 
-There is no currently no syntax for setting help strings, so the `ArgumentParser` class has a `set_help` method that lets you do it manually.
+There is currently no syntax for setting help strings, so the `ArgumentParser` class has a `set_help` method that lets you do it manually.
 
 ```python
 >>> parser = arguable.ArgumentParser('-v[verbose] infile')
 >>> parser.set_help('verbose', 'print more information and warnings')
->>> parser.parse_args(['-h'])
+```
+
+Help message:
+
+```
 usage: [-h] [-v] infile
 
 positional arguments:
