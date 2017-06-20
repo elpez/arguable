@@ -58,6 +58,24 @@ It's easy to specify the exact number and type of command line arguments that sh
 [4.0, 5.0]
 ```
 
+### Setting help strings
+
+There is no currently no syntax for setting help strings, so the `ArgumentParser` class has a `set_help` method that lets you do it manually.
+
+```python
+>>> parser = arguable.ArgumentParser('-v[verbose] infile')
+>>> parser.set_help('verbose', 'print more information and warnings')
+>>> parser.parse_args(['-h'])
+usage: [-h] [-v] infile
+
+positional arguments:
+  infile
+
+optional arguments:
+  -h, --help     show this help message and exit
+  -v, --verbose  print more information and warnings
+```
+
 ### Integration with argparse
 
 You can still do all the regular `argparse` things, in case you need an advanced feature that `arguable` doesn't support.
@@ -111,6 +129,13 @@ def parse_args(self, args=None, exit_on_error=None, **kwargs):
 ```
 
 Identical to its `argparse` counterpart except for the `exit_on_error` argument, which lets you control how the parser deals with errors. When it is `False` (the default when `args` is explicitly given), the parser doesn't print anything to `stderr` and raises a `ValueError` instead of exiting. When it is `True` (the default when `args` is omitted and falls back to `sys.argv`), it behaves normally.
+
+```python
+def set_help(self, argname, helpstr):
+    ...
+```
+
+Set the help string on the previously-added argument `argname`.
 
 ### Namespace
 

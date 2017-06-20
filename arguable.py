@@ -26,6 +26,12 @@ class ArgumentParser(argparse.ArgumentParser):
         for token in yield_tokens(pattern):
             self._add_argument_from_token(token)
 
+    def set_help(self, argname, helpstr):
+        """Set the help string on the argument given by argname."""
+        for action in self._actions:
+            if action.dest == argname:
+                action.help = helpstr
+
     def _add_argument_from_token(self, token):
         """Add an argument based on the token. The token should not be a combined short flag token 
            like "-vfg", i.e. it should be something yielded from yield_tokens.
