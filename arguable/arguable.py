@@ -36,25 +36,25 @@ class ArgumentParser(argparse.ArgumentParser):
         """Add an argument based on the token. The token should not be a combined short flag token 
            like "-vfg", i.e. it should be something yielded from yield_tokens.
         """
-        if len(token) >= 2 and token[0] == '-' and token[1] != '-':
+        if len(token) >= 2 and token[0] == "-" and token[1] != "-":
             token, long_name = determine_long_name(token)
             # a repeated flag
             if len(token) == 3:
                 token = token[:-1]
-                kwargs = {'action':'count', 'default':0}
+                kwargs = {"action": "count", "default": 0}
             else:
-                kwargs = {'action':'store_true'}
+                kwargs = {"action": "store_true"}
             if long_name:
-                self.add_argument(token, '--'+long_name, **kwargs)
+                self.add_argument(token, "--" + long_name, **kwargs)
             else:
                 self.add_argument(token, **kwargs)
         else:
             token, nargs = determine_nargs(token)
             token, typ = determine_type(token)
-            if token.startswith('--'):
+            if token.startswith("--"):
                 # long flags default to being optional
-                if (nargs is None or nargs == '?') and typ is None:
-                    self.add_argument(token, action='store_true')
+                if (nargs is None or nargs == "?") and typ is None:
+                    self.add_argument(token, action="store_true")
                 else:
                     self.add_argument(token, nargs=nargs, type=typ)
             else:
@@ -76,6 +76,7 @@ class ArgumentParser(argparse.ArgumentParser):
                 except SystemExit as e:
                     raise ValueError
 
+
 class Namespace(argparse.Namespace):
     def __enter__(self):
         return self
@@ -83,7 +84,7 @@ class Namespace(argparse.Namespace):
     def __exit__(self, *args):
         ret = False
         for val in self.__dict__.values():
-            if hasattr(val, '__exit__'):
+            if hasattr(val, "__exit__"):
                 exit_val = val.__exit__(*args)
                 if exit_val is True:
                     ret = True
@@ -92,7 +93,9 @@ class Namespace(argparse.Namespace):
 
 def parse_args(pattern, args=None, exit_on_error=None, **kwargs):
     """Shortcut for calling parse_args on an ArgumentParser."""
-    return ArgumentParser(pattern, **kwargs).parse_args(args, exit_on_error=exit_on_error)
+    return ArgumentParser(pattern, **kwargs).parse_args(
+        args, exit_on_error=exit_on_error
+    )
 
 
 def yield_tokens(pattern):
@@ -102,84 +105,96 @@ def yield_tokens(pattern):
        separate flags like "-v", "-f" and "-g".
     """
     for token in pattern.split():
-        if len(token) >= 2 and token[0] == '-' and token[1] != '-':
+        if len(token) >= 2 and token[0] == "-" and token[1] != "-":
             i = 1
             while i < len(token):
                 if i < len(token) - 1:
                     # a flag (repeated or not) with a verbose name in brackets
                     # ex. "o[object]", "vv[verbose]"
-                    if token[i+1] == '[' or (token[i] == token[i+1] and i < len(token) - 2 and
-                                             token[i+2] == '['):
-                        end = token.find(']', i+2)
+                    if token[i + 1] == "[" or (
+                        token[i] == token[i + 1]
+                        and i < len(token) - 2
+                        and token[i + 2] == "["
+                    ):
+                        end = token.find("]", i + 2)
                         if end == -1:
-                            raise SyntaxError('"[" in {} needs a closing "]"'.format(token))
-                        yield '-' + token[i:end+1]
+                            raise SyntaxError(
+                                '"[" in {} needs a closing "]"'.format(token)
+                            )
+                        yield "-" + token[i : end + 1]
                         i = end + 1
                     # a repeated flag, ex. "vv"
-                    elif token[i] == token[i+1]:
-                        yield '-' + token[i:i+2]
+                    elif token[i] == token[i + 1]:
+                        yield "-" + token[i : i + 2]
                         i += 2
                     # a normal flag
                     else:
-                        yield '-' + token[i]
+                        yield "-" + token[i]
                         i += 1
                 else:
-                    yield '-' + token[i]
+                    yield "-" + token[i]
                     i += 1
         else:
             yield token
 
+
 def determine_long_name(token):
     """Return (token, long_name)"""
     try:
-        token, long_name = token.split('[', maxsplit=1)
-        long_name = long_name.rstrip(']')
+        token, long_name = token.split("[", maxsplit=1)
+        long_name = long_name.rstrip("]")
     # the split failed
     except ValueError:
-        return (token, '')
+        return (token, "")
     # the split succeeded (a verbose name was provided)
     else:
         return (token, long_name)
 
+
 def determine_nargs(token):
     """Return (token, nargs)"""
     try:
-        token, end = token.split('...', maxsplit=1)
+        token, end = token.split("...", maxsplit=1)
     # the split failed
     except ValueError:
-        if token.endswith('?'):
-            return (token[:-1], '?')
+        if token.endswith("?"):
+            return (token[:-1], "?")
         else:
             return (token, None)
     # the split succeeded
     else:
-        if end == '?':
-            # foo...? gathers all remaining positional arguments, but doesn't complain if none are 
+        if end == "?":
+            # foo...? gathers all remaining positional arguments, but doesn't complain if none are
             # left
-            return (token, '*')
-        elif end == '':
+            return (token, "*")
+        elif end == "":
             # foo... gathers all remaining positional arguments, requiring at least one
-            return (token, '+')
+            return (token, "+")
         else:
             # foo...n gathers n remaining positional arguments
             try:
                 return (token, int(end))
             except ValueError:
-                msg = '"..." must be followed by nothing, "?" or an integer, not {}'.format(end)
+                msg = '"..." must be followed by nothing, "?" or an integer, not {}'.format(
+                    end
+                )
                 raise SyntaxError(msg)
 
+
 _type_map = {
-    'int':int,
-    'bool':bool,
-    'str':str,
-    'float':float,
-    'rfile':argparse.FileType('r'),
-    'wfile':argparse.FileType('w'),
+    "int": int,
+    "bool": bool,
+    "str": str,
+    "float": float,
+    "rfile": argparse.FileType("r"),
+    "wfile": argparse.FileType("w"),
 }
+
+
 def determine_type(token):
     """Return (token, type)"""
     try:
-        token, type_str = token.split(':', maxsplit=1)
+        token, type_str = token.split(":", maxsplit=1)
     # the split failed
     except ValueError:
         return (token, None)
@@ -198,8 +213,10 @@ def suppress_stderr():
     yield
     sys.stderr = old_stderr
 
+
 class MyContextManager:
     """Used to test context management on Namespace objects"""
+
     def __init__(self):
         self.has_exited = False
 
