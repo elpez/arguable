@@ -1,12 +1,10 @@
-#!/usr/bin/env python3
-
 import unittest
 import contextlib
 import io
 import sys
 import os
 
-import arguable
+from arguable import arguable
 
 
 class ParserTests(unittest.TestCase):
